@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Application To-Do-List</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Aplikasi To-Do-List</h2>
+        
+        <!-- Form Pencarian -->
+        <div class="form-inline my-3">
+            <input type="text" id="searchNIK" placeholder="NIK" class="form-control mr-2">
+            <input type="text" id="searchName" placeholder="Nama" class="form-control mr-2">
+            <button id="searchButton" class="btn btn-primary">Search</button>
+            <button id="addButton" class="btn btn-success ml-2">Add</button>
+        </div>
+        
+        <!-- Form Tambah/Edit Data -->
+        <div id="formSection" style="display: none;">
+            <h4 id="formTitle">Tambah Data Baru</h4>
+            <form id="employeeForm">
+                <div class="form-group">
+                    <label for="nik">NIK</label>
+                    <input type="text" id="nik" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fullName">Nama Lengkap</label>
+                    <input type="text" id="fullName" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Jenis Kelamin</label><br>
+                    <input type="radio" id="male" name="gender" value="Laki-laki" required>
+                    <label for="male">Laki-laki</label>
+                    <input type="radio" id="female" name="gender" value="Perempuan">
+                    <label for="female">Perempuan</label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="birthDate">Tanggal Lahir</label>
+                    <input type="date" id="birthDate" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Alamat</label>
+                    <textarea id="address" class="form-control" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="country">Negara</label>
+                    <select id="country" class="form-control" required>
+                        <option value="">Pilih Negara</option>
+                        <option value="Indonesia">Indonesia</option>
+                        <option value="Argentina">Argentina</option>
+                        <option value="Portugal">Portugal</option>
+                        <option value="Rusia">Rusia</option>
+                        <option value="Malaysia">Malaysia</option>
+                        <!-- Tambahkan negara lainnya sesuai kebutuhan -->
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="button" class="btn btn-secondary" onclick="cancelForm()">Batal</button>
+            </form>
+        </div>
+        
+        <!-- Tabel Data Karyawan -->
+        <table class="table table-bordered mt-4">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>NIK</th>
+                    <th>Nama Lengkap</th>
+                    <th>Umur</th>
+                    <th>Tanggal Lahir</th>
+                    <th>Jenis Kelamin</th>
+                    <th>Alamat</th>
+                    <th>Negara</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="employeeTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let employees = JSON.parse(localStorage.getItem('employees')) || [];
+        let editIndex = -1;
+
+        // Fungsi untuk Menampilkan Data 
+        function displayEmployees() {
+            const employeeTableBody = $('#employeeTableBody');
+            employeeTableBody.empty();
+            employees.forEach((employee, index) => {
+                employeeTableBody.append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${employee.nik}</td>
+                        <td>${employee.fullName}</td>
+                        <td>${calculateAge(employee.birthDate)}</td>
+                        <td>${employee.birthDate}</td>
+                        <td>${employee.gender}</td>
+                        <td>${employee.address}</td>
+                        <td>${employee.country}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editEmployee(${index})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${index})">Hapus</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Fungsi untuk Menghitung Umur dari Tanggal Lahir
+        function calculateAge(birthDate) {
+            const birth = new Date(birthDate);
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        // Fungsi untuk Menampilkan Form Tambah/Edit
+        $('#addButton').click(function() {
+            editIndex = -1;
+            $('#formTitle').text('Tambah Data Karyawan');
+            $('#employeeForm')[0].reset();
+            $('#formSection').show();
+        });
+
+        // Fungsi untuk Menyimpan Data 
+        $('#employeeForm').submit(function(event) {
+            event.preventDefault();
+            const newEmployee = {
+                nik: $('#nik').val(),
+                fullName: $('#fullName').val(),
+                gender: $('input[name="gender"]:checked').val(),
+                birthDate: $('#birthDate').val(),
+                address: $('#address').val(),
+                country: $('#country').val()
+            };
+
+            if (editIndex === -1) {
+                employees.push(newEmployee);
+            } else {
+                employees[editIndex] = newEmployee;
+            }
+
+            localStorage.setItem('employees', JSON.stringify(employees));
+            displayEmployees();
+            $('#formSection').hide();
+        });
+
+        // Fungsi untuk Membatalkan Form
+        function cancelForm() {
+            $('#formSection').hide();
+            $('#employeeForm')[0].reset();
+        }
+
+        // Fungsi untuk Mengedit Data 
+        function editEmployee(index) {
+            editIndex = index;
+            const employee = employees[index];
+            $('#formTitle').text('Edit Data Karyawan');
+            $('#nik').val(employee.nik);
+            $('#fullName').val(employee.fullName);
+            $(`input[name="gender"][value="${employee.gender}"]`).prop('checked', true);
+            $('#birthDate').val(employee.birthDate);
+            $('#address').val(employee.address);
+            $('#country').val(employee.country);
+            $('#formSection').show();
+        }
+
+        // Fungsi untuk Menghapus Data  dengan Konfirmasi
+        function deleteEmployee(index) {
+            const employee = employees[index];
+            const confirmation = confirm(`Anda yakin menghapus data ${employee.fullName} ?`);
+            if (confirmation) {
+                employees.splice(index, 1);
+                localStorage.setItem('employees', JSON.stringify(employees));
+                displayEmployees();
+            }
+        }
+
+        // Tampilkan Data saat Halaman Dimuat
+        $(document).ready(function() {
+            displayEmployees();
+        });
+    </script>
+</body>
+</html>
